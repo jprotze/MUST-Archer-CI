@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+  <benchmark name="must_fiber" outpath="bench_run">
+    <comment>Experiments with MUST and Archer fiber implementation</comment>
+
+    <!-- Configuration -->
+    
+    <parameterset name="build_parameter">
+      <parameter name="tsan_opts">env TSAN_OPTIONS=detect_deadlocks=0:report_bugs=0:exitcode=0:ignore_noninstrumented_modules=1:$TSAN_OPTIONS</parameter>
+      <parameter name="mustrun_exe">/home/pj416018/MUST/BUILD-clang-15-fiber/install/bin/mustrun</parameter>
+      <parameter name="mustrun_flags">--must:shim --must:tsan --must:hybrid --must:distributed --must:nodl --must:clean --must:timeout 70 --must:mpiexec </parameter>
+      <parameter name="mpiexec_exe">mpiexec.hydra</parameter>
+      <parameter name="code_directory">/home/pj416018/testdir/cholesky_omptasks/detach-deps/</parameter>
+      <!--<parameter name="code">base,tsan,tsan-ann</parameter>-->
+      <parameter name="code">base,tsan,tsan-ann</parameter>
+      <parameter name="code_target"  mode="python">{"base":"clang_claix", "tsan":"clang_tsan_claix", "tsan-ann":"clang_tsan_ann_claix"}.get("${code}")</parameter>
+    </parameterset>
+    
+    <parameterset name="run_parameter" init_with="jube-claix-fiber.xml:build_parameter">
+      <parameter name="tool" mode="python" separator=",">{"base":"none"}.get("${code}", "archer,must")</parameter>
+      <parameter name="class">${code}-${tool}</parameter>
+      <parameter name="code_exe">./build/ch_${code_target}_fine</parameter>
+
+      <!--<parameter name="nthreads" type="int" separator=";">8;4;2</parameter>-->
+      <parameter name="nthreads" type="int" separator=";">8;4</parameter>
+      <parameter name="nproc" mode="python" type="int">32//${nthreads}</parameter>
+      
+      <parameter name="lazy" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
+      <parameter name="tasking" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
+      <parameter name="direct" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
+
+      <parameter name="run_command" mode="python">{"must":"${tsan_opts} ${mustrun_exe} ${mustrun_flags} ${mpiexec_exe} -n ${nproc}"}.get("${tool}", "${tsan_opts} ${mpiexec_exe} -n ${nproc}")</parameter>
+      <parameter name="run_env">env ARCHER_OPTIONS="verbose=1:tasking=${tasking}:stack_size=4096:ignore_serial=1" FIBER_OPTIONS="verbose=1:lazy=${lazy}:direct=${direct}" MUST_DISABLE_TSAN_MESSAGES=1 OMP_NUM_THREADS=${nthreads}</parameter>
+      <parameter name="run_args" separator=";">$[2**15] $[2**9] 0;$[2**15] $[2**8] 0;$[2**15] $[2**7] 0</parameter>
+    </parameterset>
+    
+    
+    <!-- Operation -->
+    <step name="build">
+      <use>build_parameter</use>
+      <do>cp ${code_directory}/*.cpp ${code_directory}/*.c ${code_directory}/*.h ${code_directory}/*.def ${code_directory}/Makefile .</do> 
+      <do>make -j TARGET=${code_target}</do>
+      <do>echo ${mpiexec_exe}</do>
+    </step>
+    <step name="run" depend="build">
+      <use>build_parameter</use>
+      <use>run_parameter</use>
+      <use>result_config_pset</use>
+      <do>${run_command} ${run_env} ${code_exe} ${run_args}</do>
+    </step>
+    <patternset name="app_runtime">
+      <pattern name="wtime" type="float">mype: 0:.*:time:$jube_pat_fp:gflops_ser</pattern>
+      <pattern name="stasks" type="int">num_send_tasks $jube_pat_int,</pattern>
+      <pattern name="rtasks" type="int">num_recv_tasks $jube_pat_int,</pattern>
+      <pattern name="ctasks" type="int">num_comp_tasks $jube_pat_int</pattern>
+      <pattern name="maxrss" type="int">MAX RSS\[KBytes\] during execution: $jube_pat_int</pattern>
+    </patternset>
+    <analyser name="fiber_analyzer">
+      <use>app_runtime</use>
+      <analyse step="run">
+        <file>stdout</file>
+      </analyse>
+    </analyser>
+    <parameterset name="result_config_pset">
+      <parameter name="nprocs_quoted">"${nproc}"</parameter>
+      <parameter name="nthreads_quoted">"${nthreads}"</parameter>
+      <parameter name="class_quoted">"${class}"</parameter>
+      <parameter name="run_args_quoted">"${run_args}"</parameter>
+    </parameterset>
+    <result name="spec_result">
+      <use>fiber_analyzer</use>
+      <table name="time_csv" style="csv" sort="benchmark">
+          <column title='"class"'>class_quoted</column>
+          <column title='"input"'>run_args_quoted</column>
+          <column title='"nthreads"'>nthreads_quoted</column>
+          <column title='"nproc"'>nprocs_quoted</column>
+          <column title='"lazy"'>lazy</column>
+          <column title='"tasking"'>tasking</column>
+          <column title='"direct"'>direct</column>
+          <column title='"wtime"'>wtime_avg</column>
+          <column title='"stasks"'>stasks_sum</column>
+          <column title='"rtasks"'>rtasks_sum</column>
+          <column title='"ctasks"'>ctasks_sum</column>
+          <column title='"maxrss"'>maxrss_sum</column>
+      </table>
+  </result>
+  </benchmark>
+</jube>
