@@ -1,0 +1,6 @@
+CC = /opt/llvm/bin/clang -Wl,-Bsymbolic-functions -Wl,-z,relro -I/usr/include/x86_64-linux-gnu/mpich -L/usr/lib/x86_64-linux-gnu -lmpich
+CXX = /opt/llvm/bin/clang++ -Wl,-Bsymbolic-functions -Wl,-z,relro -I/usr/include/x86_64-linux-gnu/mpich -L/usr/lib/x86_64-linux-gnu -lmpichcxx -lmpich
+
+MPICXX = $(CXX)
+CFLAGS  += -I/usr/include/mkl -O3 -I./ -std=gnu99  -fopenmp -gdwarf-4 -fno-omit-frame-pointer -fsanitize=thread -DUSE_TSAN_ANNOTATIONS
+LDFLAGS += -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl

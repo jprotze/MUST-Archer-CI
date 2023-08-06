@@ -1,0 +1,6 @@
+CC = mpicc.openmpi
+CXX = mpicxx.openmpi
+
+MPICXX = $(CXX)
+CFLAGS  += -I/usr/include/mkl -O3 -I./ -std=gnu99  -fopenmp -gdwarf-4 -fno-omit-frame-pointer -fsanitize=thread
+LDFLAGS += -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl
