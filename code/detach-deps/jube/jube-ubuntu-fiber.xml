@@ -10,10 +10,16 @@
       <parameter name="mpi_implementation" tag="mpich">mpich</parameter>
       <parameter name="mpi_implementation" tag="openmpi">openmpi</parameter>
       <parameter name="mpi_implementation" tag="mpich+openmpi">mpich,openmpi</parameter>
+      <parameter name="timeout">25</parameter>
+      <parameter name="timeout" tag="test">3</parameter>
+      <parameter name="timeout" tag="14">25</parameter>
+      <parameter name="timeout" tag="15">120</parameter>
+      <parameter name="timeout" tag="14+15">120</parameter>
+            
       <parameter name="tsan_opts" separator=";">env TSAN_OPTIONS=detect_deadlocks=0:report_bugs=0:exitcode=0:ignore_noninstrumented_modules=1:$TSAN_OPTIONS FI_PROVIDER=shm OMPI_MCA_btl=self,vader</parameter>
       <parameter name="mustrun_exe">/opt/MUST/${mpi_implementation}/bin/mustrun</parameter>
       <parameter name="mpiexec_exe" mode="python">{"mpich": "mpiexec.mpich -bind-to core:${tthreads} -map-by socket", "openmpi": "mpiexec.openmpi --bind-to core --map-by socket:PE=${tthreads}"}["${mpi_implementation}"]</parameter>
-      <parameter name="mustrun_env">env MUST_SHIM=1 MUST_TSAN=1 MUST_HYBRID=1 MUST_DISTRIBUTED=1 MUST_NODL=1 MUST_CLEAN=1 MUST_TIMEOUT=25 MUST_MPIEXEC=\"${mpiexec_exe}\"</parameter>
+      <parameter name="mustrun_env">env MUST_SHIM=1 MUST_TSAN=1 MUST_HYBRID=1 MUST_DISTRIBUTED=1 MUST_NODL=1 MUST_CLEAN=1 MUST_TIMEOUT=${timeout} MUST_MPIEXEC=\"${mpiexec_exe}\"</parameter>
       <parameter name="code_directory">../../../../../</parameter>
       <!--<parameter name="code">base,tsan,tsan-ann</parameter>-->
       <parameter name="code">base,tsan,tsan-ann</parameter>
@@ -27,8 +33,10 @@
 
       <!--<parameter name="nthreads" type="int" separator=";">8;4;2</parameter>-->
       <parameter name="nthreads" type="int" separator=";">8</parameter>
+      <parameter name="nthreads" type="int" separator=";" tag="test">2</parameter>
       <parameter name="tthreads" type="int" mode="python">${nthreads}+1</parameter>
       <parameter name="nproc" mode="python" type="int">32//${nthreads}</parameter>
+      <parameter name="nproc" mode="python" type="int" tag="test">4//${nthreads}</parameter>
       
       <parameter name="lazy" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
       <parameter name="tasking" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>

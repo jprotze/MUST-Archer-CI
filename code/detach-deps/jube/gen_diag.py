@@ -22,6 +22,9 @@ base = {}
 rdata = {}
 odata = {}
 
+gnt = gnp = 0
+gts = set()
+
 with open(input) as file: 
     try:
         for ln, line in enumerate(file):
@@ -33,9 +36,10 @@ with open(input) as file:
             if cols[0] == '"class"':
                 headers = cols
                 continue
-            ts = int(cols[1][6:10])
-            nt = int(cols[2][1])
-            np = int(cols[3][1])
+            ts = int(cols[1].split(" ")[1])
+            gts.add(ts)
+            gnt = nt = int(cols[2][1])
+            gnp = np = int(cols[3][1])
             if cols[0] == '"base-none"':
                 base[(ts,nt,np)]=cols[7:]
                 rdata[(ts,nt,np)]={}
@@ -71,12 +75,12 @@ plotcolors=['#00549F', '#612158', '#CC071E', '#F6A800', '#FFED00', '#BDCD00', '#
 markers = ["o" , "," , "v" , "^" , "<", ">"]
 x = npy.arange(8)
 
-for nt in (8,):
-    np = 32//nt
+for nt in (gnt,):
+    np = gnp
     fig, ax = plt.subplots(1,figsize=(6,4))
     ax.set_ylabel('Rel. Runtime')
 
-    for e,size in enumerate([128,256,512]):
+    for e,size in enumerate(gts):
         for ae,app in enumerate(odata[(size,nt,np)].keys()):
             data = npy.array([odata[(size,nt,np)][app][a][0] for a in xdatas]).flatten()
     #        data = npy.array([a[0] for a in odata[(size,nt,np)][app].values()]).flatten()
@@ -95,7 +99,7 @@ for nt in (8,):
     fig, ax = plt.subplots(1,figsize=(6,4))
     ax.set_ylabel('Rel. Memory Usage')
 
-    for e,size in enumerate([128,256,512]):
+    for e,size in enumerate(gts):
         for ae,app in enumerate(odata[(size,nt,np)].keys()):
             data = npy.array([odata[(size,nt,np)][app][a][1] for a in xdatas]).flatten()
             ax.scatter(x-(1-e)/5, data, color=plotcolors[ae], marker=markers[e], s=10, label="%s (%i)"%(app[6:-1],size))

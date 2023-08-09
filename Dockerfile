@@ -75,13 +75,13 @@ RUN mkdir -p /external && cd /external && \
 
 # Install LLVM
 RUN mkdir -p /external && cd /external && \
-      git clone -b 15.x-fiber https://github.com/jprotze/llvm-project.git && \
+      git clone -b 15.x-fiber-corr23 https://github.com/jprotze/llvm-project.git && \
       cd llvm-project && mkdir BUILD && cd BUILD && \
       CC=clang CXX=clang++ cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_LINKER=$(which ld)\
+            -DCMAKE_LINKER=$(which ld) \
+            -DLLVM_ENABLE_WARNINGS=OFF \
             -DCMAKE_INSTALL_PREFIX=/opt/llvm \
             -DOPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DLLVM_ENABLE_LIBCXX=ON \
             -DCLANG_DEFAULT_CXX_STDLIB=libstdc++ \
             -DLLVM_BINUTILS_INCDIR=/usr/include \
             -DLLVM_ENABLE_PROJECTS="clang;compiler-rt;clang-tools-extra;openmp" \
@@ -124,8 +124,6 @@ WORKDIR /
 
 # Run as non-privileged user
 RUN     useradd -ms /bin/bash user
-COPY code .
-#RUN	chown -R user code
 
 WORKDIR /home/user
 USER user

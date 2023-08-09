@@ -6,10 +6,15 @@
     <!-- Configuration -->
     
     <parameterset name="build_parameter">
+      <parameter name="timeout">25</parameter>
+      <parameter name="timeout" tag="test">3</parameter>
+      <parameter name="timeout" tag="14">25</parameter>
+      <parameter name="timeout" tag="15">120</parameter>
+      <parameter name="timeout" tag="14+15">120</parameter>
       <parameter name="tsan_opts">env TSAN_OPTIONS=detect_deadlocks=0:report_bugs=0:exitcode=0:ignore_noninstrumented_modules=1:$TSAN_OPTIONS</parameter>
       <parameter name="mustrun_exe">/home/pj416018/MUST/BUILD-clang-15-fiber/install/bin/mustrun</parameter>
       <parameter name="mpiexec_exe">mpiexec.hydra -bind-to core:${tthreads} -map-by socket</parameter>
-      <parameter name="mustrun_env">env MUST_SHIM=1 MUST_TSAN=1 MUST_HYBRID=1 MUST_DISTRIBUTED=1 MUST_NODL=1 MUST_CLEAN=1 MUST_TIMEOUT=120 MUST_MPIEXEC=\"${mpiexec_exe}\"</parameter>
+      <parameter name="mustrun_env">env MUST_SHIM=1 MUST_TSAN=1 MUST_HYBRID=1 MUST_DISTRIBUTED=1 MUST_NODL=1 MUST_CLEAN=1 MUST_TIMEOUT=${timeout} MUST_MPIEXEC=\"${mpiexec_exe}\"</parameter>
       <parameter name="code_directory">/home/pj416018/testdir/cholesky_omptasks/detach-deps/</parameter>
       <!--<parameter name="code">base,tsan,tsan-ann</parameter>-->
       <parameter name="code">base,tsan,tsan-ann</parameter>
@@ -23,16 +28,22 @@
 
       <!--<parameter name="nthreads" type="int" separator=";">8;4;2</parameter>-->
       <parameter name="nthreads" type="int" separator=";">8</parameter>
+      <parameter name="nthreads" type="int" separator=";" tag="test">2</parameter>
       <parameter name="tthreads" type="int" mode="python">${nthreads}+1</parameter>
       <parameter name="nproc" mode="python" type="int">32//${nthreads}</parameter>
+      <parameter name="nproc" mode="python" type="int" tag="test">4//${nthreads}</parameter>
       
       <parameter name="lazy" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
       <parameter name="tasking" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
       <parameter name="direct" mode="python" type="int">{"base-none":"0"}.get("${class}", "0,1")</parameter>
 
-      <parameter name="run_command" mode="python">{"must":"${tsan_opts} ${mustrun_env} ${mustrun_exe} -n ${nproc}"}.get("${tool}", "${tsan_opts} ${mpiexec_exe} -n ${nproc}")</parameter>
+      <parameter name="run_command" mode="python" separator=";">{"must":"${tsan_opts} ${mustrun_env} ${mustrun_exe} -n ${nproc}"}.get("${tool}", "${tsan_opts} ${mpiexec_exe} -n ${nproc}")</parameter>
       <parameter name="run_env">env ARCHER_OPTIONS="verbose=1:tasking=${tasking}:stack_size=4096:ignore_serial=1" FIBER_OPTIONS="verbose=1:lazy=${lazy}:direct=${direct}" MUST_DISABLE_TSAN_MESSAGES=1 OMP_NUM_THREADS=${nthreads}</parameter>
-      <parameter name="run_args" separator=";">16384 512 0;16384 256 0;16384 128 0;32768 512 0;32768 256 0;32768 128 0</parameter>
+      <parameter name="run_args" separator=";">16384 512 0;16384 256 0;16384 128 0</parameter>
+      <parameter name="run_args" separator=";" tag="test">1024 128 0;1024 64 0;1024 32 0</parameter>
+      <parameter name="run_args" separator=";" tag="14">16384 512 0;16384 256 0;16384 128 0</parameter>
+      <parameter name="run_args" separator=";" tag="15">32768 512 0;32768 256 0;32768 128 0</parameter>
+      <parameter name="run_args" separator=";" tag="14+15">16384 512 0;16384 256 0;16384 128 0;32768 512 0;32768 256 0;32768 128 0</parameter>
     </parameterset>
     
     
@@ -42,7 +53,7 @@
       <do>cp ${code_directory}/*.cpp ${code_directory}/*.c ${code_directory}/*.h ${code_directory}/*.def ${code_directory}/Makefile .</do> 
       <do>make -j TARGET=${code_target}</do>
     </step>
-    <step name="run" depend="build">
+    <step name="run" depend="build" iterations="5">
       <use>build_parameter</use>
       <use>run_parameter</use>
       <use>result_config_pset</use>
@@ -56,7 +67,7 @@
       <pattern name="ctasks" type="int">num_comp_tasks $jube_pat_int</pattern>
       <pattern name="maxrss" type="int">MAX RSS\[KBytes\] during execution: $jube_pat_int</pattern>
     </patternset>
-    <analyser name="fiber_analyzer">
+    <analyser name="fiber_analyzer" reduce="true">
       <use>app_runtime</use>
       <analyse step="run">
         <file>stdout</file>
